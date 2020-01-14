@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
@@ -42,11 +42,17 @@ public class UERP
         }
     }
 
-    //The Github button is so that people can easily check for updates on the github page
-    [MenuItem("UERP/Github")]
+    //The Github button that leads to the original GitHub page.
+    [MenuItem("UERP/Original GitHub")]
     private static void Github()
     {
         Application.OpenURL("https://github.com/MarshMello0/UERP");
+    }
+    //The Github button that leads to the forked GitHub page.
+    [MenuItem("UERP/Forked GitHub")]
+    private static void Github()
+    {
+        Application.OpenURL("https://github.com/reithegoat/UERP");
     }
     //This button is if for some reason they want to reset they prefs to the default
     [MenuItem("UERP/Reset to default")]
@@ -88,6 +94,7 @@ public class UERP
         try
         {
             EditorSceneManager.sceneOpened += SceneOpened;
+            EditorApplication.playModeStateChanged += LogPlayModeState;
 
             callbackCalls = 0;
             handlers = new DiscordRpc.EventHandlers();
@@ -103,6 +110,12 @@ public class UERP
         UpdatePresence();
     }
 
+    private static void LogPlayModeState(PlayModeStateChange state)
+    {
+        //Make sure whenever the Editor starts/stops playing a scene, to update the presence.
+        UpdatePresence();
+    }
+    
     private static void SceneOpened(UnityEngine.SceneManagement.Scene scene, OpenSceneMode mode)
     {
         EditorPrefs.SetString("currentScene", EditorSceneManager.GetActiveScene().name);
@@ -110,18 +123,21 @@ public class UERP
         //Every time a new scene is opened, it will call the update presence
         UpdatePresence();
     }
-
+    
+    
+    
     //This updates the presence
     static void UpdatePresence()
     {
         DiscordRpc.RichPresence discordPresence = new DiscordRpc.RichPresence();
-        discordPresence.state = "Scene: " + EditorSceneManager.GetActiveScene().name;
+        if(EditorApplication.isPlaying) //If we're in play mode, then we're playtesting a scene.
+            discordPresence.state = "Playtesting scene: " + EditorSceneManager.GetActiveScene().name;
+        else //If the two above is false, then say we're editing a scene.
+            discordPresence.state = "Editing scene: " + EditorSceneManager.GetActiveScene().name;
         discordPresence.details = "Project: " + GetProjectName();
         discordPresence.startTimestamp = long.Parse(EditorPrefs.GetString("timestamp",GetTimestamp()));
         discordPresence.largeImageKey = "logo";
-        discordPresence.largeImageText = "Unity " + Application.unityVersion;
-        discordPresence.smallImageKey = "marshmello";
-        discordPresence.smallImageText = "UERP on Github";
+        discordPresence.largeImageText = "Running Unity v" + Application.unityVersion;
         DiscordRpc.UpdatePresence(discordPresence);
     }
 
